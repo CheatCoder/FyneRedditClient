@@ -45,17 +45,15 @@ func Savedviewer() {
 	mainwin.SetContent(con)
 	dialog.NewInformation("Welcome", "You are Loged in as "+re.Name, mainwin).Show()
 
-	mainwin.ShowAndRun()
+	mainwin.Show()
 }
 
 func content(nspage int) *container.Scroll {
 	list := getUserList(nspage)
-	//con := container.New(layout.NewMaxLayout())
 
 	vbox := container.NewVBox()
 
 	scroll := container.NewVScroll(vbox)
-	//con.Add(scroll)
 
 	for _, v := range list {
 		time.Sleep(1 * time.Millisecond)

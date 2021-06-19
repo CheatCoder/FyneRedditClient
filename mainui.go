@@ -16,11 +16,14 @@ import (
 	"github.com/CheatCoder/geddit"
 )
 
-var mwin fyne.Window
-var vbox *fyne.Container
-var scroll *container.Scroll
+type mwin struct {
+	win     fyne.Window
+	vbox    *fyne.Container
+	scroll  *container.Scroll
+	sidebar *widget.List
 
-var nowsub string
+	nowsub string
+}
 
 type Post struct {
 	Title     string
@@ -29,35 +32,42 @@ type Post struct {
 	Url       string
 }
 
+var m mwin
+
 func mainwinstart() {
 	app := fyne.CurrentApp()
+	m.win = app.NewWindow("Reddit")
 
-	mwin = app.NewWindow("Reddit")
 	menu := fyne.NewMenu("Subreddit", fyne.NewMenuItem("Unsubscribe", func() {
 		defer func() {
 			recover()
 		}()
-		o.Unsubscribe(nowsub)
+		o.Unsubscribe(m.nowsub)
+		m.setsidebar()
 	}))
-	mwin.SetMainMenu(
+	usermenu := fyne.NewMenu("User", fyne.NewMenuItem("View Saved", func() {
+		Savedviewer()
+	}))
+	m.win.SetMainMenu(
 		fyne.NewMainMenu(
 			fyne.NewMenu("Menü", fyne.NewMenuItem("Credits", func() {
 				CreditsWindow(fyne.CurrentApp(), fyne.Size{Width: 300, Height: 500}).Show()
 			})),
 			menu,
+			usermenu,
 		),
 	)
 
-	nav := sidebar()
+	m.setsidebar()
 
-	vbox = container.New(layout.NewVBoxLayout())
-	scroll = container.NewScroll(vbox)
-	vbox.Add(widget.NewCard("Placeholder", "Substring", canvas.NewLine(color.Black)))
+	m.vbox = container.New(layout.NewVBoxLayout())
+	m.scroll = container.NewScroll(m.vbox)
+	m.vbox.Add(widget.NewCard("Placeholder", "Substring", canvas.NewLine(color.Black)))
 	front, err := o.Frontpage(geddit.NewSubmissions, geddit.ListingOptions{Limit: 20})
 	if err != nil {
-		vbox.Add(widget.NewCard("Placeholder", "Substring", canvas.NewLine(color.Black)))
+		m.vbox.Add(widget.NewCard("Placeholder", "Substring", canvas.NewLine(color.Black)))
 	} else {
-		setPosts(front)
+		m.setPosts(front)
 	}
 
 	search := xwidget.NewCompletionEntry([]string{})
@@ -66,7 +76,7 @@ func mainwinstart() {
 		search.HideCompletion()
 		completed, err := o.Autocompelete(s, true, false)
 		if err != nil {
-			dialog.NewError(err, mwin)
+			dialog.NewError(err, m.win)
 			return
 		}
 		search.SetOptions(completed)
@@ -78,21 +88,22 @@ func mainwinstart() {
 			recover()
 		}()
 		if err != nil {
-			dialog.NewError(err, mwin)
+			dialog.NewError(err, m.win)
 			return
 		}
-		setPosts(p)
+		m.nowsub = s
+		m.setPosts(p)
 	}
 
-	mwin.SetContent(container.NewBorder(search, nil, nav, nil, scroll))
+	m.win.SetContent(container.NewBorder(search, nil, m.sidebar, nil, m.scroll))
 
-	mwin.ShowAndRun()
+	m.win.ShowAndRun()
 }
 
-func sidebar() *widget.List {
+func (m *mwin) setsidebar() {
 	sub, err := o.MySubreddits()
 	if err != nil {
-		return nil
+		return
 	}
 	subname := make([]string, 0)
 
@@ -100,7 +111,7 @@ func sidebar() *widget.List {
 		subname = append(subname, v.Name)
 	}
 
-	list := widget.NewList(
+	m.sidebar = widget.NewList(
 		func() int {
 			return len(subname)
 		},
@@ -115,23 +126,21 @@ func sidebar() *widget.List {
 		},
 	)
 
-	list.OnSelected = func(id widget.ListItemID) {
+	m.sidebar.OnSelected = func(id widget.ListItemID) {
 		//fmt.Println(subname[id], "was clicked -> TODO: set content")
 		posts, err := o.SubredditSubmissions(subname[id], geddit.NewSubmissions, geddit.ListingOptions{Limit: 50})
-		nowsub = subname[id]
+		m.nowsub = subname[id]
 		if err != nil {
-			dialog.NewError(err, mwin)
+			dialog.NewError(err, m.win)
 		}
-		setPosts(posts)
+		m.setPosts(posts)
 	}
-
-	return list
 }
 
-func setPosts(p []*geddit.Submission) {
+func (m *mwin) setPosts(p []*geddit.Submission) {
 	cbox := container.NewVBox()
-	vbox.Remove(vbox.Objects[0])
-	scroll.ScrollToTop()
+	m.vbox.Remove(m.vbox.Objects[0])
+	m.scroll.ScrollToTop()
 	for _, v := range p {
 		go func(v *geddit.Submission) {
 			res, err := fyne.LoadResourceFromURLString(v.ThumbnailURL)
@@ -167,5 +176,5 @@ func setPosts(p []*geddit.Submission) {
 			cbox.Add(card)
 		}(v)
 	}
-	vbox.Add(cbox)
+	m.vbox.Add(cbox)
 }

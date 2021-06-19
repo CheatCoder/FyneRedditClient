@@ -8,4 +8,4 @@ require (
 	github.com/CheatCoder/geddit v0.0.0-20200521013404-78c28c13fba2
 )
 
-//replace github.com/CheatCoder/geddit v0.0.0-20200521013404-78c28c13fba2 => ./geddit
+replace github.com/CheatCoder/geddit v0.0.0-20200521013404-78c28c13fba2 => ./geddit

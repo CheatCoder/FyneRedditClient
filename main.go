@@ -11,7 +11,6 @@ var o *geddit.OAuthSession
 
 func main() {
 	startfyne()
-
 	c := make(chan string)
 	tmp, err := geddit.NewOAuthSession(
 		client,                                  //Client String
@@ -32,5 +31,4 @@ func main() {
 	close(c)
 
 	mainwinstart()
-	//Savedviewer()
 }
