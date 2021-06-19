@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"net/url"
+	"sort"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -23,6 +24,7 @@ type mwin struct {
 	sidebar *widget.List
 
 	nowsub string
+	sort   geddit.PopularitySort
 }
 
 type Post struct {
@@ -35,16 +37,25 @@ type Post struct {
 var m mwin
 
 func mainwinstart() {
+	m.sort = geddit.NewSubmissions
 	app := fyne.CurrentApp()
 	m.win = app.NewWindow("Reddit")
-
+	sorting := fyne.NewMenuItem("Sorting", nil)
 	menu := fyne.NewMenu("Subreddit", fyne.NewMenuItem("Unsubscribe", func() {
 		defer func() {
 			recover()
 		}()
 		o.Unsubscribe(m.nowsub)
 		m.setsidebar()
-	}))
+	}),
+		sorting)
+	sorting.ChildMenu = fyne.NewMenu("",
+		fyne.NewMenuItem("New", func() { m.sort = geddit.NewSubmissions; reload() }),
+		fyne.NewMenuItem("Hot", func() { m.sort = geddit.HotSubmissions; reload() }),
+		fyne.NewMenuItem("Top", func() { m.sort = geddit.TopSubmissions; reload() }),
+		fyne.NewMenuItem("Rising", func() { m.sort = geddit.RisingSubmissions; reload() }),
+	)
+
 	usermenu := fyne.NewMenu("User", fyne.NewMenuItem("View Saved", func() {
 		Savedviewer()
 	}))
@@ -63,7 +74,7 @@ func mainwinstart() {
 	m.vbox = container.New(layout.NewVBoxLayout())
 	m.scroll = container.NewScroll(m.vbox)
 	m.vbox.Add(widget.NewCard("Placeholder", "Substring", canvas.NewLine(color.Black)))
-	front, err := o.Frontpage(geddit.NewSubmissions, geddit.ListingOptions{Limit: 20})
+	front, err := o.Frontpage(m.sort, geddit.ListingOptions{Limit: 20})
 	if err != nil {
 		m.vbox.Add(widget.NewCard("Placeholder", "Substring", canvas.NewLine(color.Black)))
 	} else {
@@ -83,7 +94,7 @@ func mainwinstart() {
 		search.ShowCompletion()
 	}
 	search.Entry.OnSubmitted = func(s string) {
-		p, err := o.SubredditSubmissions(s, geddit.NewSubmissions, geddit.ListingOptions{Limit: 20})
+		p, err := o.SubredditSubmissions(s, m.sort, geddit.ListingOptions{Limit: 20})
 		defer func() {
 			recover()
 		}()
@@ -101,7 +112,7 @@ func mainwinstart() {
 }
 
 func (m *mwin) setsidebar() {
-	sub, err := o.MySubreddits()
+	sub, err := o.MySubreddits(100)
 	if err != nil {
 		return
 	}
@@ -110,6 +121,8 @@ func (m *mwin) setsidebar() {
 	for _, v := range sub {
 		subname = append(subname, v.Name)
 	}
+
+	sort.Strings(subname)
 
 	m.sidebar = widget.NewList(
 		func() int {
@@ -128,7 +141,7 @@ func (m *mwin) setsidebar() {
 
 	m.sidebar.OnSelected = func(id widget.ListItemID) {
 		//fmt.Println(subname[id], "was clicked -> TODO: set content")
-		posts, err := o.SubredditSubmissions(subname[id], geddit.NewSubmissions, geddit.ListingOptions{Limit: 50})
+		posts, err := o.SubredditSubmissions(subname[id], m.sort, geddit.ListingOptions{Limit: 50})
 		m.nowsub = subname[id]
 		if err != nil {
 			dialog.NewError(err, m.win)
@@ -177,4 +190,21 @@ func (m *mwin) setPosts(p []*geddit.Submission) {
 		}(v)
 	}
 	m.vbox.Add(cbox)
+}
+
+func reload() {
+	var posts []*geddit.Submission
+	var err error
+	if m.nowsub == "" {
+		posts, err = o.Frontpage(m.sort, geddit.ListingOptions{Limit: 20})
+		if err != nil {
+			return
+		}
+	} else {
+		posts, err = o.SubredditSubmissions(m.nowsub, m.sort, geddit.ListingOptions{Limit: 50})
+		if err != nil {
+			return
+		}
+	}
+	m.setPosts(posts)
 }
