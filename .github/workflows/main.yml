@@ -23,7 +23,7 @@ jobs:
         sudo apt-get update && sudo apt-get install gcc libgl1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev libx11-dev xorg-dev
 
     - name: Build
-      run: go build -v ./...
-
-    - name: Test
-      run: go test -v ./...
+      env:
+       ID: ${{ secrets.REDDIT_CLIENT }}
+       SECRET: ${{ secrets.REDDIT_SECRET }}
+      run: go build -v ./... -id $ID -secret $SECRET
