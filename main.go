@@ -16,6 +16,7 @@ func main() {
 	//For github
 	id := flag.String("id", "", "")
 	secret := flag.String("secret", "", "")
+	flag.Parse()
 	if *id != "" && *secret != "" {
 		client = *id
 		clientsecret = *secret
