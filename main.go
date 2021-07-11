@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -10,16 +9,14 @@ import (
 )
 
 var o *geddit.OAuthSession
+var client string
+var clientsecret string
 
 func main() {
 	startfyne()
-	//For github
-	id := flag.String("id", "", "")
-	secret := flag.String("secret", "", "")
-	flag.Parse()
-	if *id != "" && *secret != "" {
-		client = *id
-		clientsecret = *secret
+	if client != "" && clientsecret != "" {
+		client = id
+		clientsecret = secret
 	}
 	c := make(chan string)
 	fmt.Println(client, clientsecret)
