@@ -14,10 +14,10 @@ var clientsecret string
 
 func main() {
 	startfyne()
-	if client != "" && clientsecret != "" {
-		client = id
-		clientsecret = secret
-	}
+	// if client != "" && clientsecret != "" {
+	// 	client = id
+	// 	clientsecret = secret
+	// }
 	c := make(chan string)
 	fmt.Println(client, clientsecret)
 	tmp, err := geddit.NewOAuthSession(
