@@ -26,4 +26,4 @@ jobs:
       env:
        ID: ${{ secrets.REDDIT_CLIENT }}
        SECRET: ${{ secrets.REDDIT_SECRET }}
-      run: go build -v ./... -id $ID -secret $SECRET
+      run: go build -ldflags "-X main.client=$ID" "-X main.clientsecret=$SECRET" -v ./... 
